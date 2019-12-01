@@ -31,6 +31,24 @@ def read_rgbd_image(color_file, depth_file, convert_rgb_to_intensity, config):
     return rgbd_image
 
 
+# ==================================================================================
+# read a pair of RGBG images
+# register the 'source' to the 'target'
+# 
+# for non-adjacent images:
+#       -- use opencv to compute ORB feature(an efficent algorithm than SIFT)
+#       -- perform 5 point RANSAC 
+#           -- to estimate a rough alignment
+#           -- to initialize 'compute_rgbd_odometry'
+# 
+# for adjacent images: 
+#       -- use identity matrix to initialize 'compute_rgbd_odometry'
+# 
+# Output:
+#       -- is success ?
+#       -- trans: 4x4 motion matrix
+#       -- info: 6x6 information matrix
+# ==================================================================================
 def register_one_rgbd_pair(s, t, color_files, depth_files, intrinsic,
                            with_opencv, config):
     source_rgbd_image = read_rgbd_image(color_files[s], depth_files[s], True,
@@ -40,6 +58,7 @@ def register_one_rgbd_pair(s, t, color_files, depth_files, intrinsic,
 
     option = o3d.odometry.OdometryOption()
     option.max_depth_diff = config["max_depth_diff"]
+    # non-adjacent images
     if abs(s - t) is not 1:
         if with_opencv:
             success_5pt, odo_init = pose_estimation(source_rgbd_image,
@@ -51,6 +70,7 @@ def register_one_rgbd_pair(s, t, color_files, depth_files, intrinsic,
                     o3d.odometry.RGBDOdometryJacobianFromHybridTerm(), option)
                 return [success, trans, info]
         return [False, np.identity(4), np.identity(6)]
+    # non-adjacent images
     else:
         odo_init = np.identity(4)
         [success, trans, info] = o3d.odometry.compute_rgbd_odometry(
@@ -59,6 +79,18 @@ def register_one_rgbd_pair(s, t, color_files, depth_files, intrinsic,
         return [success, trans, info]
 
 
+# ==================================================================================
+# build a pose graph for multiway registration of all RGBD images in this sequence.
+# Each graph node represents an RGBD image 
+# and its pose which transforms the geometry to the global fragment space. 
+# For efficiency, only key frames are used.
+#
+# --Input 
+#       a set of geometries(e.g. point clouds or RGBD images)
+# -- Output
+#       a set of rigid transformations
+# 
+# ==================================================================================
 def make_posegraph_for_fragment(path_dataset, sid, eid, color_files,
                                 depth_files, fragment_id, n_fragments,
                                 intrinsic, with_opencv, config):
@@ -77,7 +109,7 @@ def make_posegraph_for_fragment(path_dataset, sid, eid, color_files,
                  info] = register_one_rgbd_pair(s, t, color_files, depth_files,
                                                 intrinsic, with_opencv, config)
                 trans_odometry = np.dot(trans, trans_odometry)
-                trans_odometry_inv = np.linalg.inv(trans_odometry)
+                trans_odometry_inv = np.linalg.inv(trans_odometry) # compute Inverse matrix
                 pose_graph.nodes.append(
                     o3d.registration.PoseGraphNode(trans_odometry_inv))
                 pose_graph.edges.append(
@@ -108,6 +140,12 @@ def make_posegraph_for_fragment(path_dataset, sid, eid, color_files,
         pose_graph)
 
 
+# ==================================================================================
+# Input: 
+#       -- RGBD images
+# Output:
+#       -- fragment mesh which is integrated from RGBD images
+# ==================================================================================
 def integrate_rgb_frames_for_fragment(color_files, depth_files, fragment_id,
                                       n_fragments, pose_graph_name, intrinsic,
                                       config):
@@ -130,6 +168,10 @@ def integrate_rgb_frames_for_fragment(color_files, depth_files, fragment_id,
     return mesh
 
 
+# ==================================================================================
+# Step 1: integrate RGBD images to mesh
+# Step 2: generate point cloud 
+# ==================================================================================
 def make_pointcloud_for_fragment(path_dataset, color_files, depth_files,
                                  fragment_id, n_fragments, intrinsic, config):
     mesh = integrate_rgb_frames_for_fragment(
@@ -145,6 +187,11 @@ def make_pointcloud_for_fragment(path_dataset, color_files, depth_files,
     o3d.io.write_point_cloud(pcd_name, pcd, False, True)
 
 
+# ==================================================================================
+# Step1: compute pose graph of one fragment
+# Step2: optimize pose graph
+# Step3: generate point cloud
+# ==================================================================================
 def process_single_fragment(fragment_id, color_files, depth_files, n_files,
                             n_fragments, config):
     if config["path_intrinsic"]:
@@ -153,8 +200,8 @@ def process_single_fragment(fragment_id, color_files, depth_files, n_files,
     else:
         intrinsic = o3d.camera.PinholeCameraIntrinsic(
             o3d.camera.PinholeCameraIntrinsicParameters.PrimeSenseDefault)
-    sid = fragment_id * config['n_frames_per_fragment']
-    eid = min(sid + config['n_frames_per_fragment'], n_files)
+    sid = fragment_id * config['n_frames_per_fragment'] # Start id of one single fragment
+    eid = min(sid + config['n_frames_per_fragment'], n_files) # End id of one single fragment
 
     make_posegraph_for_fragment(config["path_dataset"], sid, eid, color_files,
                                 depth_files, fragment_id, n_fragments,
@@ -164,7 +211,9 @@ def process_single_fragment(fragment_id, color_files, depth_files, n_files,
                                  depth_files, fragment_id, n_fragments,
                                  intrinsic, config)
 
-
+# ==================================================================================
+# main function to make fragments
+# ==================================================================================
 def run(config):
     print("making fragments from RGBD sequence.")
     make_clean_folder(join(config["path_dataset"], config["folder_fragment"]))

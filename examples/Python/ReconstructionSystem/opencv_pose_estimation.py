@@ -17,6 +17,12 @@ from matplotlib import pyplot as plt  # for visualizing feature matching
 import copy
 
 
+
+# ==================================================================================
+# computes OpenCV ORB feature
+# match sparse features over wide baseline images
+# perform 5-point RANSAC to estimate a rough alignment
+# ==================================================================================
 def pose_estimation(source_rgbd_image, target_rgbd_image,
                     pinhole_camera_intrinsic, debug_draw_correspondences):
     success = False

@@ -36,6 +36,9 @@ def update_posegrph_for_scene(s, t, transformation, information, odometry,
     return (odometry, pose_graph)
 
 
+# ==================================================================================
+#  fine-grained registration
+# ==================================================================================
 def multiscale_icp(source,
                    target,
                    voxel_size,
@@ -90,6 +93,10 @@ def multiscale_icp(source,
     return (result_icp.transformation, information_matrix)
 
 
+# ==================================================================================
+# computes a refined alignment between two fragments
+#       -- call function "multiscale_icp"
+# ==================================================================================
 def local_refinement(source, target, transformation_init, config):
     voxel_size = config["voxel_size"]
     (transformation, information) = \
@@ -97,19 +104,28 @@ def local_refinement(source, target, transformation_init, config):
             source, target,
             [voxel_size, voxel_size/2.0, voxel_size/4.0], [50, 30, 14],
             config, transformation_init)
+
     if config["debug_mode"]:
         draw_registration_result_original_color(source, target, transformation)
+
     return (transformation, information)
 
 
+# ==================================================================================
+# computes a refined alignment between two fragments
+#       -- call function "local_refinement"
+#       -- use Multiscale ICP to do local refinement
+# ==================================================================================
 def register_point_cloud_pair(ply_file_names, s, t, transformation_init,
                               config):
     print("reading %s ..." % ply_file_names[s])
     source = o3d.io.read_point_cloud(ply_file_names[s])
     print("reading %s ..." % ply_file_names[t])
     target = o3d.io.read_point_cloud(ply_file_names[t])
+
     (transformation, information) = \
             local_refinement(source, target, transformation_init, config)
+
     if config["debug_mode"]:
         print(transformation)
         print(information)
@@ -127,11 +143,16 @@ class matching_result:
         self.infomation = np.identity(6)
 
 
+# ==================================================================================
+# refine pose graph: 
+#       -- Input: global pose_graph generated in step "register"
+#       -- Output: new global pose_graph using refine algorithm
+# ==================================================================================
 def make_posegraph_for_refined_scene(ply_file_names, config):
     pose_graph = o3d.io.read_pose_graph(
         join(config["path_dataset"],
              config["template_global_posegraph_optimized"]))
-
+    # restore pose graph generated in step "register"
     n_files = len(ply_file_names)
     matching_results = {}
     for edge in pose_graph.edges:
@@ -176,6 +197,9 @@ def make_posegraph_for_refined_scene(ply_file_names, config):
         pose_graph_new)
 
 
+# ==================================================================================
+# main function to refine fragments
+# ==================================================================================
 def run(config):
     print("refine rough registration of fragments.")
     o3d.utility.set_verbosity_level(o3d.utility.VerbosityLevel.Debug)

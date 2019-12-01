@@ -24,15 +24,16 @@ def scalable_integrate_rgb_frames(path_dataset, intrinsic, config):
         voxel_length=config["tsdf_cubic_size"] / 512.0,
         sdf_trunc=0.04,
         color_type=o3d.integration.TSDFVolumeColorType.RGB8)
-
+    # pose graph: each node represents a fragment
     pose_graph_fragment = o3d.io.read_pose_graph(
         join(path_dataset, config["template_refined_posegraph_optimized"]))
 
+    # loop for each fragment
     for fragment_id in range(len(pose_graph_fragment.nodes)):
         pose_graph_rgbd = o3d.io.read_pose_graph(
             join(path_dataset,
                  config["template_fragment_posegraph_optimized"] % fragment_id))
-
+        # loop for each frame( RGB + depth )
         for frame_id in range(len(pose_graph_rgbd.nodes)):
             frame_id_abs = fragment_id * \
                     config['n_frames_per_fragment'] + frame_id
@@ -59,6 +60,9 @@ def scalable_integrate_rgb_frames(path_dataset, intrinsic, config):
     write_poses_to_log(traj_name, poses)
 
 
+# ==================================================================================
+# main function to integrate scenes
+# ==================================================================================
 def run(config):
     print("integrate the whole RGBD sequence using estimated camera pose.")
     if config["path_intrinsic"]:

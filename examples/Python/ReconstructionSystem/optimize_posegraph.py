@@ -10,6 +10,9 @@ sys.path.append("../Utility")
 from file import join
 
 
+# ==================================================================================
+# perform multiway registration
+# ==================================================================================
 def run_posegraph_optimization(pose_graph_name, pose_graph_optimized_name,
                                max_correspondence_distance,
                                preference_loop_closure):

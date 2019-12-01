@@ -62,21 +62,25 @@ if __name__ == "__main__":
         print("%40s : %s" % (key, str(val)))
 
     times = [0, 0, 0, 0]
+    # ===================== make fragments ============================
     if args.make:
         start_time = time.time()
         import make_fragments
         make_fragments.run(config)
         times[0] = time.time() - start_time
+    # =================== register fragments ==========================
     if args.register:
         start_time = time.time()
         import register_fragments
         register_fragments.run(config)
         times[1] = time.time() - start_time
+    # =================== refine registration =========================
     if args.refine:
         start_time = time.time()
         import refine_registration
         refine_registration.run(config)
         times[2] = time.time() - start_time
+    # ===================== integrate scene ============================
     if args.integrate:
         start_time = time.time()
         import integrate_scene
@@ -92,3 +96,4 @@ if __name__ == "__main__":
     print("- Integrate frames    %s" % datetime.timedelta(seconds=times[3]))
     print("- Total               %s" % datetime.timedelta(seconds=sum(times)))
     sys.stdout.flush()
+
