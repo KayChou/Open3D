@@ -34,6 +34,11 @@ def compute_trans(source, target):
 		o3d.registration.CorrespondenceCheckerBasedOnDistance(voxel_size*1.4)], 
 		o3d.registration.RANSACConvergenceCriteria(4000000, 500)
 		)
+
+	result = o3d.registration.registration_icp(
+		source, target, 0.02, result.transformation,
+		o3d.registration.TransformationEstimationPointToPlane())
+
 	print("Transformation: ", result.transformation)
 	return result.transformation
 
@@ -50,8 +55,7 @@ def main():
 	source = copy.deepcopy(scene1)
 	target = copy.deepcopy(scene2)
 	trans = compute_trans(source, target)
-	source.transform(trans)
-	trans = compute_trans(source, target)
+	
 
 	source.transform(trans)
 	o3d.visualization.draw_geometries([source, target])
