@@ -68,6 +68,12 @@ def compute_trans(ply_file_names, s, t):
 	information = o3d.registration.get_information_matrix_from_point_clouds(
 		source, target, voxel_size*1.4, result.transformation)
 	# print("Transformation: ", result.transformation, information)
+	
+	source_visual = copy.deepcopy(source)
+	target_visual = copy.deepcopy(target)
+	source_visual.transform(result.transformation)
+	o3d.visualization.draw_geometries([source_visual, target_visual])
+	
 	print("compute trans finished")
 	return result.transformation, information
 
@@ -117,7 +123,7 @@ def integrate_rgb_fragments(path_images_1, path_images_2, instrinsic_1, instrins
 		"./dataset/realsense_1/scene/refined_registration_optimized.json")
 	pose_graph_fragment2 = o3d.io.read_pose_graph(
 		"./dataset/realsense_2/scene/refined_registration_optimized.json")
-
+	# integrate scene 1
 	for fragment_id in range(len(pose_graph_fragment1.nodes)):
 		pose_graph_rgbd = o3d.io.read_pose_graph(
 			"./dataset/realsense_1/fragments/fragment_optimized_%03d.json" % fragment_id)
@@ -129,6 +135,19 @@ def integrate_rgb_fragments(path_images_1, path_images_2, instrinsic_1, instrins
 						  pose_graph_rgbd.nodes[frame_id].pose)
 			pose = np.dot(pose, pose_graph_scene.nodes[0].pose)
 			volume.integrate(rgbd, instrinsic_1, np.linalg.inv(pose))
+
+	# integrate scene 2
+	for fragment_id in range(len(pose_graph_fragment2.nodes)):
+		pose_graph_rgbd = o3d.io.read_pose_graph(
+			"./dataset/realsense_2/fragments/fragment_optimized_%03d.json" % fragment_id)
+		for frame_id in range(len(pose_graph_rgbd.nodes)):
+			frame_id_abs = fragment_id*100 + frame_id
+			print(color_files_2[frame_id_abs])
+			rgbd = read_rgbd_images(color_files_2[frame_id_abs], depth_files_2[frame_id_abs])
+			pose = np.dot(pose_graph_fragment2.nodes[fragment_id].pose, 
+						  pose_graph_rgbd.nodes[frame_id].pose)
+			pose = np.dot(pose, pose_graph_scene.nodes[1].pose)
+			volume.integrate(rgbd, instrinsic_2, np.linalg.inv(pose))
 
 	mesh = volume.extract_triangle_mesh()
 	mesh.compute_vertex_normals()
