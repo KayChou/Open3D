@@ -20,16 +20,21 @@ if __name__ == "__main__":
                         help="Step 1) make fragments from RGBD sequence",
                         action="store_true")
     parser.add_argument(
-        "--register",
-        help="Step 2) register all fragments to detect loop closure",
-        action="store_true")
+                        "--register",
+                        help="Step 2) register all fragments to detect loop closure",
+                        action="store_true")
     parser.add_argument("--refine",
                         help="Step 3) refine rough registrations",
                         action="store_true")
     parser.add_argument(
-        "--integrate",
-        help="Step 4) integrate the whole RGBD sequence to make final mesh",
-        action="store_true")
+                        "--integrate",
+                        help="Step 4) integrate the whole RGBD sequence to make final mesh",
+                        action="store_true")
+    parser.add_argument(
+                        "--fusion",
+                        help="Step5) integrate all scenes to fusion final point cloud", 
+                        action="store_true")
+
     parser.add_argument("--debug_mode",
                         help="turn on debug mode",
                         action="store_true")
@@ -38,16 +43,18 @@ if __name__ == "__main__":
     if not args.make and \
             not args.register and \
             not args.refine and \
-            not args.integrate:
+            not args.integrate and \
+            not args.fusion:
         parser.print_help(sys.stderr)
         sys.exit(1)
 
     # check folder structure
-    if args.config is not None:
+    if args.config is not None :
         with open(args.config) as json_file:
             config = json.load(json_file)
             initialize_config(config)
-            check_folder_structure(config["path_dataset"])
+            if(args.fusion is None):
+                check_folder_structure(config["path_dataset"])
     assert config is not None
 
     if args.debug_mode:
@@ -61,7 +68,7 @@ if __name__ == "__main__":
     for key, val in config.items():
         print("%40s : %s" % (key, str(val)))
 
-    times = [0, 0, 0, 0]
+    times = [0, 0, 0, 0, 0]
     # ===================== make fragments ============================
     if args.make:
         start_time = time.time()
@@ -86,6 +93,12 @@ if __name__ == "__main__":
         import integrate_scene
         integrate_scene.run(config)
         times[3] = time.time() - start_time
+    # ===================== fusion scene ============================
+    if args.fusion:
+        start_time = time.time()
+        import scene_fusion
+        scene_fusion.run(config)
+        times[4] = time.time() - start_time
 
     print("====================================")
     print("Elapsed time (in h:m:s)")
@@ -94,6 +107,7 @@ if __name__ == "__main__":
     print("- Register fragments  %s" % datetime.timedelta(seconds=times[1]))
     print("- Refine registration %s" % datetime.timedelta(seconds=times[2]))
     print("- Integrate frames    %s" % datetime.timedelta(seconds=times[3]))
+    print("- Fusion frames       %s" % datetime.timedelta(seconds=times[4]))
     print("- Total               %s" % datetime.timedelta(seconds=sum(times)))
     sys.stdout.flush()
 
