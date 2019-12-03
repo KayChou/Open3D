@@ -26,13 +26,16 @@ def scalable_integrate_rgb_frames(path_dataset, intrinsic, config):
         color_type=o3d.integration.TSDFVolumeColorType.RGB8)
     # pose graph: each node represents a fragment
     pose_graph_fragment = o3d.io.read_pose_graph(
-        join(path_dataset, config["template_refined_posegraph_optimized"]))
+        join(path_dataset, config["template_refined_posegraph"]))
+        # join(path_dataset, config["template_refined_posegraph_optimized"]))
+
+    
 
     # loop for each fragment
     for fragment_id in range(len(pose_graph_fragment.nodes)):
         pose_graph_rgbd = o3d.io.read_pose_graph(
             join(path_dataset,
-                 config["template_fragment_posegraph_optimized"] % fragment_id))
+                 config["template_fragment_posegraph"] % fragment_id))
         # loop for each frame( RGB + depth )
         for frame_id in range(len(pose_graph_rgbd.nodes)):
             frame_id_abs = fragment_id * \
@@ -43,9 +46,12 @@ def scalable_integrate_rgb_frames(path_dataset, intrinsic, config):
                  len(pose_graph_rgbd.nodes)))
             rgbd = read_rgbd_image(color_files[frame_id_abs],
                                    depth_files[frame_id_abs], False, config)
-            pose = np.dot(pose_graph_fragment.nodes[fragment_id].pose,
-                          pose_graph_rgbd.nodes[frame_id].pose)
-            volume.integrate(rgbd, intrinsic, np.linalg.inv(pose))
+            # pose = np.dot(pose_graph_fragment.nodes[fragment_id].pose,
+                          # pose_graph_rgbd.nodes[frame_id].pose)
+            pose = np.dot(pose_graph_rgbd.nodes[frame_id].pose, 
+                            pose_graph_fragment.nodes[fragment_id].pose)
+            # volume.integrate(rgbd, intrinsic, np.linalg.inv(pose))
+            volume.integrate(rgbd, intrinsic, pose) # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             poses.append(pose)
 
     mesh = volume.extract_triangle_mesh()

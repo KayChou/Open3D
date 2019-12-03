@@ -19,7 +19,8 @@ def update_posegrph_for_scene(s, t, transformation, information, odometry,
     if t == s + 1:  # odometry case
         odometry = np.dot(transformation, odometry)
         odometry_inv = np.linalg.inv(odometry)
-        pose_graph.nodes.append(o3d.registration.PoseGraphNode(odometry_inv))
+        # pose_graph.nodes.append(o3d.registration.PoseGraphNode(odometry_inv))
+        pose_graph.nodes.append(o3d.registration.PoseGraphNode(odometry)) # !!!!!!!!!!!
         pose_graph.edges.append(
             o3d.registration.PoseGraphEdge(s,
                                            t,

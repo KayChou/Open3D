@@ -109,9 +109,10 @@ def make_posegraph_for_fragment(path_dataset, sid, eid, color_files,
                  info] = register_one_rgbd_pair(s, t, color_files, depth_files,
                                                 intrinsic, with_opencv, config)
                 trans_odometry = np.dot(trans, trans_odometry)
-                trans_odometry_inv = np.linalg.inv(trans_odometry) # compute Inverse matrix
+                # trans_odometry_inv = np.linalg.inv(trans_odometry) # compute Inverse matrix
                 pose_graph.nodes.append(
-                    o3d.registration.PoseGraphNode(trans_odometry_inv))
+                    o3d.registration.PoseGraphNode(trans_odometry)) # !!!!!!!!!!!!!!!!!!
+                    # o3d.registration.PoseGraphNode(trans_odometry_inv))
                 pose_graph.edges.append(
                     o3d.registration.PoseGraphEdge(s - sid,
                                                    t - sid,
@@ -162,7 +163,8 @@ def integrate_rgb_frames_for_fragment(color_files, depth_files, fragment_id,
         rgbd = read_rgbd_image(color_files[i_abs], depth_files[i_abs], False,
                                config)
         pose = pose_graph.nodes[i].pose
-        volume.integrate(rgbd, intrinsic, np.linalg.inv(pose))
+        # volume.integrate(rgbd, intrinsic, np.linalg.inv(pose))
+        volume.integrate(rgbd, intrinsic, pose) # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     mesh = volume.extract_triangle_mesh()
     mesh.compute_vertex_normals()
     return mesh

@@ -91,7 +91,6 @@ def make_posegraph(ply_file_names):
 		for j in range(i+1, n_files):
 			matching_results[i*n_files + j] = matching_result(i, j)
 
-	print(matching_results)
 	for r in matching_results:
 		# compute_trans(ply_file_names, matching_results[r].s, matching_results[r].t)
 		matching_results[r].success = True
@@ -100,7 +99,7 @@ def make_posegraph(ply_file_names):
 
 	odometry = np.dot(matching_results[1].transformation, odometry)
 	odometry_inv = np.linalg.inv(odometry)
-	pose_graph.nodes.append(o3d.registration.PoseGraphNode(odometry_inv))
+	pose_graph.nodes.append(o3d.registration.PoseGraphNode(odometry))
 	pose_graph.edges.append(
 		o3d.registration.PoseGraphEdge(0, 1, 
 			matching_results[1].transformation, 
@@ -133,7 +132,7 @@ def integrate_rgb_fragments(path_images_1, path_images_2, instrinsic_1, instrins
 			rgbd = read_rgbd_images(color_files_1[frame_id_abs], depth_files_1[frame_id_abs])
 			pose = np.dot(pose_graph_fragment1.nodes[fragment_id].pose, 
 						  pose_graph_rgbd.nodes[frame_id].pose)
-			pose = np.dot(pose, pose_graph_scene.nodes[0].pose)
+			pose = np.dot(pose_graph_scene.nodes[0].pose, pose)
 			volume.integrate(rgbd, instrinsic_1, np.linalg.inv(pose))
 
 	# integrate scene 2
@@ -142,17 +141,21 @@ def integrate_rgb_fragments(path_images_1, path_images_2, instrinsic_1, instrins
 			"./dataset/realsense_2/fragments/fragment_optimized_%03d.json" % fragment_id)
 		for frame_id in range(len(pose_graph_rgbd.nodes)):
 			frame_id_abs = fragment_id*100 + frame_id
-			print(color_files_2[frame_id_abs])
+			print(color_files_1[frame_id_abs])
 			rgbd = read_rgbd_images(color_files_2[frame_id_abs], depth_files_2[frame_id_abs])
 			pose = np.dot(pose_graph_fragment2.nodes[fragment_id].pose, 
 						  pose_graph_rgbd.nodes[frame_id].pose)
-			pose = np.dot(pose, pose_graph_scene.nodes[1].pose)
-			volume.integrate(rgbd, instrinsic_2, np.linalg.inv(pose))
+			pose = np.dot(np.linalg.inv(pose), pose_graph_scene.nodes[1].pose)
+			volume.integrate(rgbd, instrinsic_2, pose)
 
 	mesh = volume.extract_triangle_mesh()
 	mesh.compute_vertex_normals()
 
-	o3d.io.write_triangle_mesh("./dataset/output.ply", mesh, False, True)
+	result_point = volume.extract_point_cloud()
+	o3d.visualization.draw_geometries([result_point])
+
+	# o3d.io.write_triangle_mesh("./dataset/output.ply", mesh, False, True)
+	o3d.io.write_point_cloud("./dataset/output.ply", result_point, False, False, False)
 
 
 

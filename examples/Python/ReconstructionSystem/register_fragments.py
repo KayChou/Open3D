@@ -87,8 +87,9 @@ def compute_initial_registration(s, t, source_down, target_down, source_fpfh,
             join(path_dataset,
                  config["template_fragment_posegraph_optimized"] % s))
         n_nodes = len(pose_graph_frag.nodes)
-        transformation_init = np.linalg.inv(pose_graph_frag.nodes[n_nodes -
-                                                                  1].pose)
+        # transformation_init = np.linalg.inv(pose_graph_frag.nodes[n_nodes -
+                                                                  # 1].pose)
+        transformation_init = pose_graph_frag.nodes[n_nodes - 1].pose
         (transformation, information) = \
                 multiscale_icp(source_down, target_down,
                 [config["voxel_size"]], [50], config, transformation_init)
@@ -118,8 +119,9 @@ def update_posegrph_for_scene(s, t, transformation, information, odometry,
                               pose_graph):
     if t == s + 1:  # odometry case
         odometry = np.dot(transformation, odometry)
-        odometry_inv = np.linalg.inv(odometry)
-        pose_graph.nodes.append(o3d.registration.PoseGraphNode(odometry_inv))
+        # odometry_inv = np.linalg.inv(odometry)
+        # pose_graph.nodes.append(o3d.registration.PoseGraphNode(odometry_inv))
+        pose_graph.nodes.append(o3d.registration.PoseGraphNode(odometry)) # !!!!!!!!!!!!!!!!
         pose_graph.edges.append(
             o3d.registration.PoseGraphEdge(s,
                                            t,
