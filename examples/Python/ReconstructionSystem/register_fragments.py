@@ -118,7 +118,8 @@ def compute_initial_registration(s, t, source_down, target_down, source_fpfh,
 def update_posegrph_for_scene(s, t, transformation, information, odometry,
                               pose_graph):
     if t == s + 1:  # odometry case
-        odometry = np.dot(transformation, odometry)
+        # odometry = np.dot(transformation, odometry)
+        odometry = np.dot(odometry, transformation) # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         # odometry_inv = np.linalg.inv(odometry)
         # pose_graph.nodes.append(o3d.registration.PoseGraphNode(odometry_inv))
         pose_graph.nodes.append(o3d.registration.PoseGraphNode(odometry)) # !!!!!!!!!!!!!!!!

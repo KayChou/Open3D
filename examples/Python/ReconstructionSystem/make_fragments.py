@@ -108,7 +108,8 @@ def make_posegraph_for_fragment(path_dataset, sid, eid, color_files,
                 [success, trans,
                  info] = register_one_rgbd_pair(s, t, color_files, depth_files,
                                                 intrinsic, with_opencv, config)
-                trans_odometry = np.dot(trans, trans_odometry)
+                # trans_odometry = np.dot(trans, trans_odometry)
+                trans_odometry = np.dot(trans_odometry, trans) # !!!!!!!!!!!!!!!!!!!!!!!!!!
                 # trans_odometry_inv = np.linalg.inv(trans_odometry) # compute Inverse matrix
                 pose_graph.nodes.append(
                     o3d.registration.PoseGraphNode(trans_odometry)) # !!!!!!!!!!!!!!!!!!

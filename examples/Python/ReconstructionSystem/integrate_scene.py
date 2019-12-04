@@ -29,8 +29,6 @@ def scalable_integrate_rgb_frames(path_dataset, intrinsic, config):
         join(path_dataset, config["template_refined_posegraph"]))
         # join(path_dataset, config["template_refined_posegraph_optimized"]))
 
-    
-
     # loop for each fragment
     for fragment_id in range(len(pose_graph_fragment.nodes)):
         pose_graph_rgbd = o3d.io.read_pose_graph(
@@ -48,8 +46,10 @@ def scalable_integrate_rgb_frames(path_dataset, intrinsic, config):
                                    depth_files[frame_id_abs], False, config)
             # pose = np.dot(pose_graph_fragment.nodes[fragment_id].pose,
                           # pose_graph_rgbd.nodes[frame_id].pose)
-            pose = np.dot(pose_graph_rgbd.nodes[frame_id].pose, 
-                            pose_graph_fragment.nodes[fragment_id].pose)
+            # pose = np.dot(pose_graph_rgbd.nodes[frame_id].pose, 
+            #                 pose_graph_fragment.nodes[fragment_id].pose)
+            pose = np.dot(pose_graph_fragment.nodes[fragment_id].pose, 
+                        pose_graph_rgbd.nodes[frame_id].pose)
             # volume.integrate(rgbd, intrinsic, np.linalg.inv(pose))
             volume.integrate(rgbd, intrinsic, pose) # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             poses.append(pose)

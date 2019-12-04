@@ -141,7 +141,7 @@ def integrate_rgb_fragments(path_images_1, path_images_2, instrinsic_1, instrins
 			"./dataset/realsense_2/fragments/fragment_optimized_%03d.json" % fragment_id)
 		for frame_id in range(len(pose_graph_rgbd.nodes)):
 			frame_id_abs = fragment_id*100 + frame_id
-			print(color_files_1[frame_id_abs])
+			print(color_files_2[frame_id_abs])
 			rgbd = read_rgbd_images(color_files_2[frame_id_abs], depth_files_2[frame_id_abs])
 			pose = np.dot(pose_graph_fragment2.nodes[fragment_id].pose, 
 						  pose_graph_rgbd.nodes[frame_id].pose)
@@ -154,8 +154,8 @@ def integrate_rgb_fragments(path_images_1, path_images_2, instrinsic_1, instrins
 	result_point = volume.extract_point_cloud()
 	o3d.visualization.draw_geometries([result_point])
 
-	# o3d.io.write_triangle_mesh("./dataset/output.ply", mesh, False, True)
-	o3d.io.write_point_cloud("./dataset/output.ply", result_point, False, False, False)
+	o3d.io.write_triangle_mesh("./dataset/output_mesh.ply", mesh, False, True)
+	o3d.io.write_point_cloud("./dataset/output_pointcloud.ply", result_point, False, False, False)
 
 
 
